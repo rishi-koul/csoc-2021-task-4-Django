@@ -32,6 +32,9 @@
         <th scope="col">Genre</th>
         <th scope="col">Rating</th>
         <th scope="col">MRP</th>
+        {% if user.is_authenticated %}
+        <th scope="col">Rate</th>
+        {% endif %}
         </tr>
     </thead>
     <tbody>
@@ -43,6 +46,11 @@
         <td>{{ book.genre }}</td>
         <td>{{ book.rating }}</td>
         <td>{{ book.mrp }}</td>
+        {% if user.is_authenticated %}
+        <td>
+            <button class="btn btn-primary" onclick="returnBook({{ book.id }})">Rate {{ book.title }}</button>
+        </td>
+        {% endif %}
         </tr>
         {% endfor %}
     </tbody>
@@ -61,6 +69,32 @@ $("#search_button").click(function(){
     final_url = final_url + "&genre=" + encodeURIComponent(genre_value);
     window.location.replace(final_url);
 });
+
+function returnBook(bid){
+    var doc = prompt("Please enter your rating (0-10)",
+                "");
+    
+   if(doc != null)
+   {
+    $.ajax({
+		url: "{% url 'rate-book' %}",
+		method: "POST",
+		data: {
+			bid: bid,
+            rating: doc,
+		},
+        success: function(data, status, xhr){
+			if(data['message'] == "success"){
+                alert("Rating succesful");
+                window.location.replace("/books/");
+			}
+			else{
+				alert("Rating unsuccesful");
+			}
+		}
+	})
+   } 
+};
 
 </script>
 {% endblock %}

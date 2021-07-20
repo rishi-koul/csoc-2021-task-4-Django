@@ -38,9 +38,7 @@ def bookListView(request):
     get_data = request.GET
     # START YOUR CODE HERE
 
-    print(get_data)
     books_list = []
-    print("\n\n\n\n", get_data, "\n\n\n\n")
     for book in Book.objects.all():
         if get_data:
             if (book.title.startswith(get_data['title']) and 
@@ -126,7 +124,6 @@ def returnBookView(request):
             if bookCpy.book.title == book_title and bookCpy.borrower.username == username:
                 bookCpy.borrower = None
                 response_data['message'] = 'success'
-                print(bookCpy.book.title)
                 bookCpy.save()
                 break
             else:
@@ -134,5 +131,36 @@ def returnBookView(request):
 
     return JsonResponse(response_data)
 
+@csrf_exempt
+@login_required
+def rateBookView(request):
+    
+    response_data = {
+        'message': None,
+    }
+    book_id = int(request.POST['bid'])
+    book_rating = int(request.POST['rating'])
+    book_title = Book.objects.get(id=book_id).title
 
- 
+    superusers = User.objects.filter(is_superuser=True)
+    no_of_superusers = 0
+    for i in superusers:
+        no_of_superusers+=1
+    
+    user = UserRating.objects.all()
+    for u in UserRating.objects.all():
+        if u.specific_user == request.user:
+            user = u
+
+    for bookCpy in Book.objects.all():
+        if bookCpy.title == book_title:
+            bookCpy.rating =  ((bookCpy.rating * no_of_superusers) - user.rating + book_rating)/no_of_superusers
+            user.rating = book_rating
+            response_data['message'] = 'success'
+            user.save()
+            bookCpy.save()
+            break
+        else:
+            response_data['message'] = 'failure'
+
+    return JsonResponse(response_data)
