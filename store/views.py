@@ -142,22 +142,20 @@ def rateBookView(request):
     book_rating = int(request.POST['rating'])
     book_title = Book.objects.get(id=book_id).title
 
+    if request.user not in Book.objects.get(id=book_id).user_rating:
+        Book.objects.get(id=book_id).user_rating[request.user] = 0.0
+        Book.objects.get(id=book_id).save()
+
     superusers = User.objects.filter(is_superuser=True)
     no_of_superusers = 0
     for i in superusers:
         no_of_superusers+=1
     
-    user = UserRating.objects.all()
-    for u in UserRating.objects.all():
-        if u.specific_user == request.user:
-            user = u
-
     for bookCpy in Book.objects.all():
         if bookCpy.title == book_title:
-            bookCpy.rating =  ((bookCpy.rating * no_of_superusers) - user.rating + book_rating)/no_of_superusers
-            user.rating = book_rating
+            bookCpy.rating =  ((bookCpy.rating * no_of_superusers) - bookCpy.user_rating[request.user] + book_rating)/no_of_superusers
+            bookCpy.user_rating[request.user] = book_rating
             response_data['message'] = 'success'
-            user.save()
             bookCpy.save()
             break
         else:
