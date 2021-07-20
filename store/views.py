@@ -4,7 +4,6 @@ from store.models import *
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-
 # Create your views here.
 
 def index(request):
@@ -17,8 +16,15 @@ def bookDetailView(request, bid):
         'num_available': None, # set this to the number of copies of the book available, or 0 if the book isn't available
     }
     # START YOUR CODE HERE
-    
-    
+    num_available = 0
+    context['book'] = Book.objects.get(id=bid)
+    book_title = Book.objects.get(id=bid).title
+    for book in BookCopy.objects.all():
+        if(book.book.title == book_title):
+            if book.borrower is None:
+                num_available+=1
+    context['num_available'] = num_available
+
     return render(request, template_name, context=context)
 
 
@@ -31,7 +37,20 @@ def bookListView(request):
     }
     get_data = request.GET
     # START YOUR CODE HERE
-    
+
+    print(get_data)
+    books_list = []
+    print("\n\n\n\n", get_data, "\n\n\n\n")
+    for book in Book.objects.all():
+        if get_data:
+            if (book.title.startswith(get_data['title']) and 
+                book.author.startswith(get_data['author']) and 
+                book.genre.startswith(get_data['genre'])):
+                books_list.append(book)
+        else:
+            books_list.append(book)
+
+    context['books'] = books_list
     
     return render(request, template_name, context=context)
 
@@ -47,8 +66,15 @@ def viewLoanedBooks(request):
     '''
     # START YOUR CODE HERE
     
+    username = request.user.username
 
+    books_list = []
+    for bookCpy in BookCopy.objects.all():
+        if bookCpy.borrower != None:
+            if bookCpy.borrower.username == username:
+                books_list.append(bookCpy)
 
+    context['books'] = books_list
     return render(request, template_name, context=context)
 
 @csrf_exempt
@@ -62,8 +88,19 @@ def loanBookView(request):
     If yes, then set the message to 'success', otherwise 'failure'
     '''
     # START YOUR CODE HERE
-    book_id = None # get the book id from post data
+    book_id = int(request.POST['bid'])# get the book id from post data
 
+    book_title = Book.objects.get(id=book_id).title
+    done = False
+    for bookCpy in BookCopy.objects.all():
+        if bookCpy.book.title == book_title and bookCpy.borrower is None:
+            response_data['message'] = 'success'
+            bookCpy.borrower = request.user
+            bookCpy.save()
+            done = True
+            break
+    if not done:
+        response_data['message'] = 'failure'
 
     return JsonResponse(response_data)
 
@@ -77,6 +114,25 @@ to make this feature complete
 @csrf_exempt
 @login_required
 def returnBookView(request):
-    pass
+    response_data = {
+        'message': None,
+    }
+    book_id = int(request.POST['bid'])
+    book_title = BookCopy.objects.get(id=book_id).book.title
+
+    username = request.user.username
+    for bookCpy in BookCopy.objects.all():
+        if bookCpy.borrower != None:
+            if bookCpy.book.title == book_title and bookCpy.borrower.username == username:
+                bookCpy.borrower = None
+                response_data['message'] = 'success'
+                print(bookCpy.book.title)
+                bookCpy.save()
+                break
+            else:
+                response_data['message'] = 'failure'
+
+    return JsonResponse(response_data)
 
 
+ 
