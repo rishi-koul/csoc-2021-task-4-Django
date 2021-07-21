@@ -1,0 +1,30 @@
+{% extends "authentication/base.html" %}
+
+{% block title %}
+<title> Login</title>
+{% endblock %}
+
+{% block content %}
+<h5 class="text-center"> Register </h5>
+<center>
+
+    <form method = "POST">
+      {% csrf_token %}
+      {% for message in messages %}
+     <h5 class="text-center text-danger"> {{message}} </h5>
+     {% endfor %}
+  <div class="row col-sm-3 mb-3 center">
+    <input type="text" class="form-control" placeholder="Username" id="username" name="username" aria-label="First name">
+  </div>
+  <div class="row col-sm-3 mb-3 center">
+    <input type="password" class="form-control" placeholder="Password" id="password" name="password" >
+  </div>
+  <div class="">
+    <button type="submit" class="btn btn-primary" method="POST" >Register</button>
+  </div>
+</form>
+</center>
+{% endblock %}
+
+
+
