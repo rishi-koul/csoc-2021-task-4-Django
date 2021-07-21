@@ -4,6 +4,7 @@ from store.models import *
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+import json
 # Create your views here.
 
 def index(request):
@@ -139,26 +140,26 @@ def rateBookView(request):
         'message': None,
     }
     book_id = int(request.POST['bid'])
-    book_rating = int(request.POST['rating'])
-    book_title = Book.objects.get(id=book_id).title
+    book_rating = float(request.POST['rating'])
+    book = Book.objects.get(id=book_id)
 
-    if request.user not in Book.objects.get(id=book_id).user_rating:
-        Book.objects.get(id=book_id).user_rating[request.user] = 0.0
-        Book.objects.get(id=book_id).save()
-
-    superusers = User.objects.filter(is_superuser=True)
-    no_of_superusers = 0
-    for i in superusers:
-        no_of_superusers+=1
+    if(Ratings.objects.filter(user=request.user, book=book).exists()):
+        print("I do exist")
+        prev_rating = Ratings.objects.get(user=request.user, book=book)
+        print("\nUser: ", request.user.username, " Store: ", prev_rating.prev_rating, "\n")
+        book.rating = ((book.rating * len(Ratings.objects.filter(book=book))) - prev_rating.prev_rating + book_rating)/len(Ratings.objects.filter(book=book))
+        prev_rating.prev_rating = book_rating
+        prev_rating.save()
+    else:
+        print("I do not exist")
+        temp_book_rating = (book.rating * len(Ratings.objects.filter(book=book)))
+        Ratings.objects.create(user=request.user, book=book, prev_rating= 0.0).save()
+        book.rating = (temp_book_rating + book_rating)/len(Ratings.objects.filter(book=book))
+        prev_rating = Ratings.objects.get(user=request.user, book=book)
+        prev_rating.prev_rating = book_rating
+        prev_rating.save()
     
-    for bookCpy in Book.objects.all():
-        if bookCpy.title == book_title:
-            bookCpy.rating =  ((bookCpy.rating * no_of_superusers) - bookCpy.user_rating[request.user] + book_rating)/no_of_superusers
-            bookCpy.user_rating[request.user] = book_rating
-            response_data['message'] = 'success'
-            bookCpy.save()
-            break
-        else:
-            response_data['message'] = 'failure'
+    book.save()
+    response_data['message'] = 'success'
 
     return JsonResponse(response_data)
