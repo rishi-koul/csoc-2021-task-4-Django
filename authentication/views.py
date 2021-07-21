@@ -16,7 +16,7 @@ def loginView(request):
         if (user is not None) :
             login(request, user)
             return redirect('/')
-        messages.info(request, "Invalid Credentials")
+        messages.info(request, "User doesnt exist")
 
     return render(request, template_name)
 
@@ -27,7 +27,7 @@ def registerView(request):
         password = request.POST.get('password')
 
         if (User.objects.filter(username=username).exists()) :
-            messages.info(request, "User with this username already registered")
+            messages.info(request, "Already registered")
             return render(request, template_name)
 
         user = User.objects.create_user(

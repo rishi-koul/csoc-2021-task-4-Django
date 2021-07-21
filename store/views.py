@@ -114,21 +114,14 @@ to make this feature complete
 @login_required
 def returnBookView(request):
     response_data = {
-        'message': None,
+        'message': 'failure',
     }
     book_id = int(request.POST['bid'])
-    book_title = BookCopy.objects.get(id=book_id).book.title
+    book = BookCopy.objects.get(id=book_id)
 
-    username = request.user.username
-    for bookCpy in BookCopy.objects.all():
-        if bookCpy.borrower != None:
-            if bookCpy.book.title == book_title and bookCpy.borrower.username == username:
-                bookCpy.borrower = None
-                response_data['message'] = 'success'
-                bookCpy.save()
-                break
-            else:
-                response_data['message'] = 'failure'
+    book.borrower = None
+    response_data['message'] = 'success'
+    book.save()
 
     return JsonResponse(response_data)
 
